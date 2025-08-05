@@ -1,129 +1,112 @@
 # Lenguaje USAC - Plataforma Educativa
 
-Plataforma educativa interactiva para la preparación del examen de lenguaje de la Universidad de San Carlos de Guatemala, basada en la Guía Temática oficial.
+Plataforma educativa para preparación del examen de lenguaje de la Universidad de San Carlos de Guatemala.
 
-## 🎯 Características
+## 📋 Descripción
 
-- **6 Módulos Educativos** basados en la Guía Temática oficial de la USAC
-- **Sistema de Gamificación** con puntos, progreso y insignias
-- **Contenido Generado por IA** utilizando Google Gemini
-- **Autenticación Segura** con Supabase
-- **Pagos de Una Sola Vez** con Stripe ($19 USD)
-- **Diseño Responsivo** optimizado para dispositivos móviles
+Esta aplicación web educativa está diseñada para ayudar a estudiantes a prepararse para el examen de lenguaje de la USAC, basada en la Guía Temática oficial. La plataforma ofrece contenido educativo, quizzes interactivos y un asistente virtual potenciado por IA.
 
-## 🚀 Desarrollo Local
+## ✨ Características Principales
 
-### Prerrequisitos
-- Node.js 18+ (solo para comandos de Vercel)
-- Navegador web moderno
-
-### Inicio Rápido
-```bash
-# Opción 1: Servidor web simple
-npm run serve
-
-# Opción 2: Abrir directamente en navegador
-open index.html
-```
-
-### Desarrollo con Vercel
-```bash
-# Instalar dependencias
-npm install
-
-# Servidor de desarrollo de Vercel
-npm run dev
-
-# Vista previa de despliegue
-npm run preview
-
-# Despliegue a producción
-npm run deploy
-```
-
-## 📁 Estructura del Proyecto
-
-```
-/
-├── index.html          # Punto de entrada principal
-├── app.js             # Lógica de la aplicación
-├── styles.css         # Estilos principales
-├── yw_manifest.json   # Configuración de IA
-├── vercel.json        # Configuración de Vercel
-├── package.json       # Configuración del proyecto
-└── YOUWARE.md         # Documentación técnica
-```
-
-## 🛠️ Tecnologías
-
-- **Frontend**: HTML5, CSS3, JavaScript Vanilla
-- **Backend**: Supabase (Database, Auth)
-- **Pagos**: Stripe Checkout
-- **IA**: Google Gemini via Youware AI SDK
-- **Hosting**: Vercel
-
-## 🔧 Configuración
-
-### Variables de Entorno
-Las siguientes variables están configuradas en `vercel.json`:
-
-- `SUPABASE_URL` - URL del proyecto Supabase
-- `SUPABASE_ANON_KEY` - Clave pública de Supabase
-- `STRIPE_PUBLISHABLE_KEY` - Clave pública de Stripe
-- `STRIPE_PRICE_ID` - ID del precio de Stripe ($19 USD)
-- `GEMINI_API_KEY` - Clave API de Google Gemini
-
-### Base de Datos (Supabase)
-- **Proyecto**: "Lenguaje" (ID: augrzzbvroycxdosamom)
-- **Región**: us-east-1
-- **Estado**: ACTIVE_HEALTHY
-
-## 📚 Módulos Educativos
-
-1. **Comunicación** - Elementos, funciones del lenguaje, argumentación
-2. **Lenguaje** - Signo lingüístico, tipos, disciplinas
-3. **Ortografía** - Reglas, acentuación, puntuación
-4. **Gramática y Vocabulario** - Análisis, categorías, formación
-5. **Exposición Oral y Escrita** - Redacción, tipos de texto
-6. **Comprensión Lectora** - Estrategias, figuras literarias
-
-## 🔐 Seguridad
-
-- RLS (Row Level Security) habilitado en Supabase
-- Validación de entrada en frontend
-- Autenticación JWT con Supabase
-- Headers de seguridad configurados en Vercel
-
-## 📱 Compatibilidad
-
-- Chrome 80+
-- Firefox 75+
-- Safari 13+
-- Edge 80+
-- Dispositivos móviles iOS y Android
+- 🔐 **Sistema de Autenticación**: Registro y login seguros con Supabase Auth
+- 📚 **6 Módulos Educativos**: Contenido estructurado según la Guía Temática oficial
+- 🧠 **IA Generativa**: Contenido personalizado y asistente virtual con Google Gemini
+- 🎮 **Sistema de Gamificación**: Puntos, insignias y progreso visual
+- 💰 **Pagos Integrados**: Sistema de pago único con Stripe
+- 📱 **Diseño Responsive**: Adaptado a todos los dispositivos
 
 ## 🚀 Despliegue
 
-La aplicación está configurada para despliegue automático en Vercel:
+### Requisitos Previos
 
-1. Conectar repositorio a Vercel
-2. Las variables de entorno se configuran automáticamente desde `vercel.json`
-3. Despliegue automático en cada push a main
+- Cuenta en Vercel
+- Cuenta en Supabase con proyecto configurado
+- Cuenta en Stripe con producto y precio configurados
+- API Key de Google Gemini
 
-## 📄 Licencia
+### Pasos para Desplegar
 
-MIT License - ver archivo LICENSE para detalles.
+1. **Clonar el repositorio**
 
-## 🤝 Contribución
+```bash
+git clone https://github.com/tu-usuario/lenguaje-usac.git
+cd lenguaje-usac
+```
 
-1. Fork el proyecto
-2. Crear rama para feature (`git checkout -b feature/nueva-caracteristica`)
-3. Commit cambios (`git commit -am 'Agregar nueva característica'`)
-4. Push a la rama (`git push origin feature/nueva-caracteristica`)
-5. Crear Pull Request
+2. **Instalar dependencias**
 
-## 📞 Soporte
+```bash
+npm install
+```
 
-- Email: soporte@lenguajeusac.com
-- Discord: https://discord.com/invite/youware
-- Documentación: Ver YOUWARE.md para detalles técnicos
+3. **Configurar variables de entorno en Supabase Edge Functions**
+
+```bash
+# Configurar variables para Edge Functions
+npx supabase secrets set --project-ref augrzzbvroycxdosamom \
+  STRIPE_SECRET_KEY=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 \
+  STRIPE_PRICE_ID=price_1RsCvfFlSFoL2Zh44D5nxCpx \
+  APP_URL=https://lenguaje-usac.vercel.app \
+  SUPABASE_URL=https://augrzzbvroycxdosamom.supabase.co \
+  SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key \
+  STRIPE_WEBHOOK_SECRET=tu_webhook_secret_de_stripe
+```
+
+4. **Configurar webhook en Stripe**
+
+- Ve al Dashboard de Stripe > Desarrolladores > Webhooks
+- Añade un nuevo endpoint: `https://augrzzbvroycxdosamom.functions.supabase.co/stripe-webhook`
+- Selecciona los eventos: `checkout.session.completed`
+- Guarda el Signing Secret generado para usarlo como `STRIPE_WEBHOOK_SECRET`
+
+5. **Desplegar en Vercel**
+
+```bash
+npm run deploy
+```
+
+También puedes conectar tu repositorio a Vercel para despliegues automáticos:
+
+- Importa tu repositorio en Vercel
+- Configura las variables de entorno según las definidas en `vercel.json`
+- Despliega la aplicación
+
+## 🛠️ Desarrollo Local
+
+```bash
+# Servidor de desarrollo con variables de entorno
+npm run dev
+
+# Servidor simple para desarrollo básico
+npm run serve
+
+# Vista previa de despliegue
+npm run preview
+```
+
+## 📊 Estructura del Proyecto
+
+- `index.html`: Punto de entrada principal
+- `app.js`: Lógica de la aplicación y gestión de estado
+- `styles.css`: Estilos CSS responsivos
+- `vercel.json`: Configuración de despliegue
+- `package.json`: Scripts y dependencias del proyecto
+- `yw_manifest.json`: Configuración de modelos IA
+
+## 🔒 Seguridad
+
+La aplicación implementa:
+
+- Row Level Security (RLS) en Supabase
+- Autenticación basada en JWT
+- Content Security Policy (CSP) en producción
+- Validación de entrada en frontend y backend
+- Claves API protegidas con variables de entorno
+
+## 📝 Licencia
+
+Este proyecto está licenciado bajo la Licencia MIT - vea el archivo LICENSE para más detalles.
+
+---
+
+Desarrollado por el equipo de Lenguaje USAC

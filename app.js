@@ -22,6 +22,7 @@ let userProgress = {};
 let quizData = {};
 let stripe = null;
 let supabase = null;
+let userSubscription = null; // Estado de suscripción del usuario
 
 // AI Context para seguimiento de discusiones
 let aiConversationHistory = [];
@@ -234,6 +235,28 @@ const supabaseAuth = {
 // Initialize Application
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
+    
+    // Verificar parámetros de URL para pagos completados
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment');
+    
+    if (paymentStatus === 'success') {
+        // Mostrar mensaje de éxito
+        setTimeout(() => {
+            alert('¡Pago procesado exitosamente! Tu cuenta ha sido actualizada con acceso premium.');
+            
+            // Recargar la información del usuario para actualizar estado de suscripción
+            if (currentUser) {
+                loadUserProfile().then(() => {
+                    updateUI();
+                });
+            }
+        }, 1000);
+    } else if (paymentStatus === 'canceled') {
+        setTimeout(() => {
+            alert('El proceso de pago fue cancelado. Puedes intentarlo nuevamente cuando lo desees.');
+        }, 1000);
+    }
 });
 
 async function initializeApp() {
@@ -585,65 +608,45 @@ async function handlePaymentSubmit(e) {
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
     
     try {
-        // Create a Checkout Session
-        // En una implementación real, esto se haría en el servidor para mantener segura la clave secreta
-        // Aquí lo hacemos en el cliente para la demostración
+        // Obtener el token de autenticación actual
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+            throw new Error('No se pudo obtener la sesión de autenticación');
+        }
         
-        const checkoutSession = {
-            payment_method_types: ['card'],
-            line_items: [
-                {
-                    price_data: {
-                        currency: 'usd',
-                        product_data: {
-                            name: 'Lenguaje USAC - Licencia de por vida',
-                            description: 'Acceso completo a todos los módulos educativos',
-                            images: ['https://i.ibb.co/QfNMWKM/lenguaje-usac-logo.png'],
-                        },
-                        unit_amount: 1900, // $19.00
-                    },
-                    quantity: 1,
+        // Llamar a la Edge Function de Supabase para crear una sesión de Stripe
+        const response = await fetch(
+            'https://augrzzbvroycxdosamom.supabase.co/functions/v1/create-checkout-session',
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
                 },
-            ],
-            mode: 'payment',
-            success_url: window.location.origin + '?payment=success',
-            cancel_url: window.location.origin + '?payment=canceled',
-            customer_email: currentUser.email,
-            client_reference_id: currentUser.id,
-            metadata: {
-                user_id: currentUser.id
+                body: JSON.stringify({
+                    user_id: currentUser.id,
+                    email: currentUser.email
+                })
             }
-        };
-
-        // En una implementación real, llamaríamos a un endpoint en nuestro servidor
-        console.log('Se enviaría la siguiente sesión a Stripe:', checkoutSession);
+        );
         
-        // Simular la respuesta de la API de Stripe
-        const mockSessionResponse = {
-            id: 'cs_test_' + Math.random().toString(36).substring(2, 15),
-            url: 'https://checkout.stripe.com/pay/cs_test_mockSession'
-        };
-
-        // En un caso real, la redirección sería a la URL proporcionada por Stripe
-        // window.location.href = session.url;
+        // Verificar si la respuesta es exitosa
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Error al crear la sesión de pago');
+        }
         
-        // Para demostración, simulamos el proceso exitoso
-        alert('En una aplicación real, serías redirigido a la página de pago de Stripe. Aquí simularemos un pago exitoso.');
+        // Obtener la URL de Checkout de Stripe
+        const { id, url } = await response.json();
         
-        // Simulate successful payment
-        setTimeout(() => {
-            alert('¡Pago procesado exitosamente! Ahora tienes acceso completo a todos los módulos.');
-            hideModal(document.getElementById('payment-modal'));
-            
-            // Simular un usuario con acceso premium
-            if (!userProgress['comunicacion']) {
-                userProgress['comunicacion'] = { completed: 0, points: 50 };
-            } else {
-                userProgress['comunicacion'].points += 50;
-            }
-            
-            updateUI();
-        }, 2000);
+        if (!url) {
+            throw new Error('No se obtuvo la URL de Checkout de Stripe');
+        }
+        
+        console.log('Sesión de Checkout creada:', { id, url });
+        
+        // Redirigir al usuario a la página de Checkout de Stripe
+        window.location.href = url;
         
     } catch (error) {
         console.error('Payment error:', error);
@@ -661,6 +664,7 @@ function updateUI() {
     const hero = document.getElementById('hero');
     const dashboard = document.getElementById('dashboard');
     const modules = document.getElementById('modules');
+    const getAccessBtn = document.getElementById('get-access-btn');
     
     if (currentUser) {
         authButtons.style.display = 'none';
@@ -669,7 +673,19 @@ function updateUI() {
         dashboard.style.display = 'block';
         modules.style.display = 'block';
         
+        // Actualizar botón de acceso basado en estado premium
+        if (userSubscription?.is_premium) {
+            getAccessBtn.textContent = 'Acceso Premium Activo';
+            getAccessBtn.disabled = true;
+            getAccessBtn.classList.add('premium-active');
+        } else {
+            getAccessBtn.textContent = 'Obtener Acceso - $19';
+            getAccessBtn.disabled = false;
+            getAccessBtn.classList.remove('premium-active');
+        }
+        
         updateUserStats();
+        updateModulesAccess();
     } else {
         authButtons.style.display = 'flex';
         userInfo.style.display = 'none';
@@ -677,6 +693,39 @@ function updateUI() {
         dashboard.style.display = 'none';
         modules.style.display = 'none';
     }
+}
+
+// Función para actualizar el acceso a módulos según estado de suscripción
+function updateModulesAccess() {
+    const isPremium = userSubscription?.is_premium || false;
+    const moduleCards = document.querySelectorAll('.module-card');
+    
+    moduleCards.forEach((card, index) => {
+        // Permitir acceso a todos los módulos para usuarios premium
+        // Para usuarios gratuitos, solo mostrar el primer módulo (Comunicación)
+        const isLocked = !isPremium && index > 0;
+        
+        if (isLocked) {
+            if (!card.querySelector('.module-lock')) {
+                const lockOverlay = document.createElement('div');
+                lockOverlay.className = 'module-lock';
+                lockOverlay.innerHTML = '<i class="fas fa-lock"></i><p>Adquiere acceso premium</p>';
+                card.appendChild(lockOverlay);
+                
+                card.classList.add('locked');
+                
+                // Deshabilitar el clic para módulos bloqueados
+                card.style.pointerEvents = 'none';
+            }
+        } else {
+            const lockElement = card.querySelector('.module-lock');
+            if (lockElement) {
+                lockElement.remove();
+            }
+            card.classList.remove('locked');
+            card.style.pointerEvents = 'auto';
+        }
+    });
 }
 
 function updateUserStats() {
@@ -1258,6 +1307,20 @@ async function loadUserProfile() {
             return;
         }
         
+        // Cargar estado de suscripción del usuario
+        const { data: subscription, error: subscriptionError } = await supabase
+            .from('user_subscriptions')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .single();
+            
+        if (subscriptionError && subscriptionError.code !== 'PGRST116') {
+            console.error('Error loading subscription:', subscriptionError);
+        } else {
+            userSubscription = subscription;
+            console.log('Subscription status:', userSubscription);
+        }
+        
         // Load user progress
         const { data: progress, error: progressError } = await supabase
             .from('user_progress')
@@ -1287,6 +1350,15 @@ async function loadUserProfile() {
                 if (p.completed) {
                     userProgress[moduleTitle].completed++;
                     userProgress[moduleTitle].points += 10;
+                }
+            });
+        }
+        
+        // Si el usuario tiene una suscripción premium, desbloquear todos los módulos
+        if (userSubscription?.is_premium) {
+            Object.keys(MODULES).forEach(moduleKey => {
+                if (!userProgress[moduleKey]) {
+                    userProgress[moduleKey] = { completed: 0, points: 0 };
                 }
             });
         }
